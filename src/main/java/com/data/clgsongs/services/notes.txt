@@ -1,0 +1,66 @@
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+@RestController
+@RequestMapping("/api/mp3")
+public class Mp3Controller {
+
+    // Specify directory for saving uploaded files
+    @Value("${upload.directory}")
+    private String uploadDirectory;
+
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadMp3File(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty() || !file.getContentType().equals("audio/mpeg")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid file format. Please upload an MP3 file.");
+        }
+
+        try {
+            // Save the file to the specified directory
+            Path filePath = Paths.get(uploadDirectory + File.separator + file.getOriginalFilename());
+            Files.createDirectories(filePath.getParent()); // Ensure directory exists
+            Files.write(filePath, file.getBytes());
+
+            return ResponseEntity.status(HttpStatus.OK).body("File uploaded successfully: " + file.getOriginalFilename());
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to upload file");
+        }
+    }
+}
+
+
+
+
+
+for the authetication purpose
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .authorizeHttpRequests(authz -> authz
+            .requestMatchers("/user").permitAll() // Allow public access to "/user"
+            .requestMatchers("/admin").authenticated() // Require authentication for "/admin"
+        )
+        .formLogin(withDefaults()) // Enable form-based login
+        .httpBasic(withDefaults()); // Enable HTTP Basic authentication (optional)
+
+    return http.build();
+}
+
+
+
+Previous configuration
+
+.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // Allow all OPTIONS requests
+//                                        .requestMatchers("/student/upload/{songname}").permitAll() // Allow public access to "/user"
+//                                        .anyRequest().authenticated() // Require authentication for any other requests
+                                        .requestMatchers("/admin/**").authenticated()
+                                        .requestMatchers("/h2-console/**").authenticated()
+                                        .anyRequest().permitAll()
